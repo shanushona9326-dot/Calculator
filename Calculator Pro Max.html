@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculator Pro Max</title>
+    <style>
+        * { box-sizing: border-box; transition: 0.2s; }
+        body { background: #0f0f0f; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: 'Segoe UI', sans-serif; user-select: none; }
+        .calc-container { background: #000; padding: 30px; border-radius: 40px; width: 620px; border: 2px solid #333; box-shadow: 0 30px 60px rgba(0,0,0,0.8); }
+        h1 { color: #ff9f0a; text-align: center; font-size: 20px; letter-spacing: 4px; margin-bottom: 25px; font-weight: bold; }
+        #display { width: 100%; height: 100px; font-size: 55px; text-align: right; border: none; background: none; color: white; outline: none; margin-bottom: 20px; padding: 10px; }
+        .layout { display: flex; gap: 25px; }
+        .sci-side { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; flex: 1; border-right: 1px solid #222; padding-right: 20px; }
+        .std-side { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; flex: 1.5; }
+        button { height: 60px; border-radius: 30px; border: none; font-size: 18px; font-weight: 600; cursor: pointer; color: white; }
+        .btn-num { background: #222; }
+        .btn-op { background: #ff9f0a; color: white; }
+        .btn-sci { background: #1a1a1a; color: #ff9f0a; font-size: 14px; border: 1px solid #333; }
+        .btn-ac { background: #a5a5a5; color: black; }
+        .highlight { color: #ff9f0a !important; font-weight: bold; }
+        button:hover { filter: brightness(1.4); }
+        button:active { transform: scale(0.9); }
+    </style>
+</head>
+<body>
+
+<div class="calc-container">
+    <h1>CALCULATOR PRO MAX</h1>
+    <input type="text" id="display" value="0" readonly>
+    
+    <div class="layout">
+        <div class="sci-side">
+            <button class="btn-sci" onclick="press('**2')">x²</button>
+            <button class="btn-sci" onclick="press('**3')">x³</button>
+            <button class="btn-sci" onclick="math('sin')">sin</button>
+            <button class="btn-sci" onclick="math('cos')">cos</button>
+            <button class="btn-sci" onclick="math('tan')">tan</button>
+            <button class="btn-sci" onclick="math('sqrt')">√</button>
+            <button class="btn-sci" onclick="press('3.14159')">π</button>
+            <button class="btn-sci" onclick="press('**')">xʸ</button>
+        </div>
+
+        <div class="std-side">
+            <button class="btn-ac" onclick="cls()">AC</button>
+            <button class="btn-ac" onclick="del()">C</button>
+            <button class="btn-op" onclick="press('%')">%</button>
+            <button class="btn-op" onclick="press('/')">÷</button>
+            
+            <button class="btn-num" onclick="press('7')">7</button>
+            <button class="btn-num" onclick="press('8')">8</button>
+            <button class="btn-num" onclick="press('9')">9</button>
+            <button class="btn-op" onclick="press('*')">×</button>
+            
+            <button class="btn-num" onclick="press('4')">4</button>
+            <button class="btn-num" onclick="press('5')">5</button>
+            <button class="btn-num" onclick="press('6')">6</button>
+            <button class="btn-op" onclick="press('-')">-</button>
+            
+            <button class="btn-num" onclick="press('1')">1</button>
+            <button class="btn-num" onclick="press('2')">2</button>
+            <button class="btn-num" onclick="press('3')">3</button>
+            <button class="btn-op" onclick="press('+')">+</button>
+            
+            <button class="btn-num" style="grid-column: span 2;" onclick="press('0')">0</button>
+            <button class="btn-num" onclick="press('.')">.</button>
+            <button class="btn-op" onclick="runSteps()">=</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const box = document.getElementById('display');
+
+    function press(v) {
+        const lastChar = box.value.slice(-1);
+        const operators = ['+', '-', '*', '/', '.', '%'];
+        if (operators.includes(v) && operators.includes(lastChar)) return; 
+        if (box.value === "0" && !v.includes('*')) box.value = v;
+        else box.value += v;
+    }
+
+    // ULTRA-STRICT WHITELIST KEYBOARD LOGIC
+    window.addEventListener('keydown', (e) => {
+        const key = e.key;
+        
+        // Allowed Numbers
+        if (key >= '0' && key <= '9') {
+            e.preventDefault();
+            press(key);
+        } 
+        // Allowed Math Operators
+        else if (['+', '-', '*', '/', '.', '%'].includes(key)) {
+            e.preventDefault();
+            press(key);
+        }
+        // Action Keys
+        else if (key === 'Enter') {
+            e.preventDefault();
+            runSteps();
+        } else if (key === 'Backspace') {
+            e.preventDefault();
+            del();
+        } else if (key === 'Escape') {
+            e.preventDefault();
+            cls();
+        } 
+        // BLOCK EVERYTHING ELSE (F1-F12, Letters, etc.)
+        else {
+            if (key.startsWith('F')) {
+                e.preventDefault(); 
+            }
+        }
+    });
+
+    function cls() { box.value = "0"; box.classList.remove('highlight'); }
+    
+    function del() { 
+        if (box.value.length > 1) box.value = box.value.slice(0, -1);
+        else box.value = "0";
+    }
+
+    async function runSteps() {
+        let eq = box.value;
+        const pattern = /(-?\d+\.?\d*[\+\-\*\/]|(-?\d+\.?\d*\*\*+\d+))(-?\d+\.?\d*)/;
+        box.classList.add('highlight');
+        while (true) {
+            let match = eq.match(pattern);
+            if (!match) break;
+            let stepResult = eval(match[0]);
+            if (!Number.isInteger(stepResult)) stepResult = stepResult.toFixed(4);
+            eq = eq.replace(match[0], stepResult);
+            box.value = eq;
+            await new Promise(r => setTimeout(r, 1000));
+        }
+        box.classList.remove('highlight');
+    }
+
+    function math(type) {
+        let n = eval(box.value);
+        if(type === 'sin') box.value = Math.sin(n * Math.PI/180).toFixed(4);
+        if(type === 'cos') box.value = Math.cos(n * Math.PI/180).toFixed(4);
+        if(type === 'tan') box.value = Math.tan(n * Math.PI/180).toFixed(4);
+        if(type === 'sqrt') box.value = Math.sqrt(n).toFixed(4);
+    }
+</script>
+
+</body>
+</html>
